@@ -14,8 +14,8 @@
 Adafruit_NeoPixel pixels(1, PIN, NEO_GRB + NEO_KHZ800);
 
 const String host = "app.bitrise.io";
-const String Wifi_Name = "Bitrise";
-const String Wifi_Pass = "NemErtek31";
+const String Wifi_Name = "Your-WiFi-Name";
+const String Wifi_Pass = "Your-WiFi-Password";
 const String App_URL = "/app/ae82b6a9ec246f90/status.json?token=AHkq9V2RubZyORmdYxLGZw&branch=master";
 
 const int PORT = 443;  // HTTPS 443
