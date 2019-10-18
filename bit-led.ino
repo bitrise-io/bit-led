@@ -10,28 +10,36 @@
 // Define the data PIN we will use for the LED
 #define PIN 15
 
+// Declare object of class WiFiClient
+WiFiClientSecure httpsClient;
+
 // Set up the NeoPixel LED on the predefined PIN
 Adafruit_NeoPixel pixels(1, PIN, NEO_GRB + NEO_KHZ800);
 
-const String host = "app.bitrise.io";
-const String Wifi_Name = "Your-WiFi-Name";
-const String Wifi_Pass = "Your-WiFi-Password";
+const String Host = "api.bitrise.io";
+const String Wifi_Name = "Your-Wifi-Name";
+const String Wifi_Pass = "Your-Wifi-Pass";
 const String App_URL = "/app/ae82b6a9ec246f90/status.json?token=AHkq9V2RubZyORmdYxLGZw&branch=master";
 
-const int PORT = 443;  // HTTPS 443
+const String CONFIG_HOST = "gist.githubusercontent.com";
+const String CONFIG_URL = "/bitrisekristof/b9414fe2dbbea82745ffe8abc14707d6/raw/config.conf";
+const String BITRISE_HOST = "app.bitrise.io";
+
+const int PORT = 443;  //HTTPS= 443 and HTTP = 80
+String Slug_From_Gist;
+
 
 //SHA1 finger print of certificate use web browser to view and copy
-const char fingerprint[] PROGMEM = "1E E5 3F 59 83 35 42 53 49 69 FB 0A 3A 49 8D 66 5E 58 05 15";
-
-// Colors
+const char fingerprint[] PROGMEM = "32 5B 1E 37 8B 82 46 1A 01 5B 18 FA 1F 0C 76 C0 A3 90 C4 7F";
+// Constant colors
 const uint32_t C_Black = pixels.Color(0,0,0);
 const uint32_t C_Red = pixels.Color(255,0,0);
 const uint32_t C_Green = pixels.Color(0,255,0);
 const uint32_t C_Blue = pixels.Color(0,0,255);
 const uint32_t C_Purple = pixels.Color(118,15,195);
-const uint32_t C_Yellow = pixels.Color(244,244,30);
+const uint32_t C_Yellow = pixels.Color(255,200,0);
 const uint32_t C_Magenta = pixels.Color(244,244,30);
-const uint32_t C_Cyan = pixels.Color(244,244,30);
+const uint32_t C_Cyan = pixels.Color(245,0,245);
 
 // The current color of the LED
 uint32_t LED_Color = C_Black;
@@ -42,24 +50,40 @@ int Blink_State = 0;
 
 unsigned long Previous_Millis = 0;
 
-const long Delay_Interval = 500;
+const long Delay_Interval = 100;
 
 void setup() {
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
   pixels.clear();
   Set_LED(C_Purple, 1);
   Show_LED();
-  ConnectToWifi(Wifi_Name, Wifi_Pass);
+  connectToWifi(Wifi_Name, Wifi_Pass);
+  Slug_From_Gist = GetSlug(CONFIG_HOST, CONFIG_URL);
 }
 
 void loop() {
-  if (GetStatusOfLastBuild(App_URL) == 1) {
-    Set_LED(C_Green, 0);
-  } else {
-    Set_LED(C_Red, 0);
+  char StatusCh = getStatusOfLastBuild(Slug_From_Gist, "");
+  switch (StatusCh) {
+    case '0':
+      Set_LED(C_Purple, 0);
+      break;
+    case '1':
+      Set_LED(C_Green, 0);
+      break;
+    case '2':
+      Set_LED(C_Red, 0);
+      break;
+    case '3':
+      Set_LED(C_Yellow, 0);
+      break;
+    default:
+      Set_LED(C_Cyan, 1);
+      break;
   }
-  Show_LED();
-  delay(500);
+  unsigned long Before_Loop = millis();
+  while (Before_Loop + 500 > millis()) {
+    Show_LED();
+  }
 }
 
 void Set_LED(uint32_t color, int blinking) {
@@ -69,7 +93,6 @@ void Set_LED(uint32_t color, int blinking) {
 
 void Show_LED() {
   unsigned long Current_Millis = millis();
-
   if (Current_Millis - Previous_Millis >= Delay_Interval) {
     Previous_Millis = Current_Millis;
     // if the LED is off turn it on and vice-versa:
@@ -89,7 +112,7 @@ void Show_LED() {
   pixels.show();
 }
 
-void ConnectToWifi(String ssid, String password) {
+void connectToWifi(String ssid, String password) {
   delay(1000);
   Serial.begin(115200);
   WiFi.mode(WIFI_OFF);        //Prevents reconnection issue (taking too long to connect)
@@ -114,13 +137,53 @@ void ConnectToWifi(String ssid, String password) {
   Serial.println(WiFi.localIP());  //IP address assigned to your ESP
 }
 
-int GetStatusOfLastBuild(String url) {
-   WiFiClientSecure httpsClient;    //Declare object of class WiFiClient
+char getStatusOfLastBuild(String slug, String token)
+{
+  httpsClient.setFingerprint(fingerprint);
+  httpsClient.setTimeout(15000); // 15 Seconds
+  int r=0; //retry counter
+  while((!httpsClient.connect(Host, PORT)) && (r < 30)){
+    delay(100);
+    r++;
+  }
+  if(r==30) {
+    Serial.println("Failed to connect");
+    return 'x';
+  }
+  String ADCData, getData, Link;
+  int adcvalue=analogRead(A0);  //Read Analog value of LDR
+  ADCData = String(adcvalue);   //String to interger conversion
+
+  httpsClient.print(String("GET ") + "/v0.1/apps/" + slug + "/builds?limit=1"+ " HTTP/1.1\r\n" +
+               "Host: " + Host + "\r\n" +
+               "Connection: close\r\n\r\n");
+  while (httpsClient.connected()) {
+    String line = httpsClient.readStringUntil('\n');
+    if (line == "\r") {
+      Serial.println("headers received");
+      break;
+    }
+  }
+  String line;
+  line = httpsClient.readString();  //Read Line by Line
+  Serial.println(line);
+
+  int idx = line.indexOf("status");
+
+  Serial.print("Status :");
+  Serial.println(line[idx + 8]);
+
+  return line[idx + 8];
+}
+
+String GetHttpContent(String host, String url) {
+
+  WiFiClientSecure httpsClient;    //Declare object of class WiFiClient
 
   Serial.println(host);
 
-  Serial.printf("Using fingerprint '%s'\n", fingerprint);
-  httpsClient.setFingerprint(fingerprint);
+  //httpsClient.setFingerprint(fingerPrint);
+  httpsClient.setInsecure();
   httpsClient.setTimeout(15000); // 15 Seconds
   delay(1000);
 
@@ -143,12 +206,11 @@ int GetStatusOfLastBuild(String url) {
   ADCData = String(adcvalue);   //String to interger conversion
 
   //GET Data
-  Link = url;
 
   Serial.print("requesting URL: ");
-  Serial.println(host+Link);
+  Serial.println(host+url);
 
-  httpsClient.print(String("GET ") + Link + " HTTP/1.1\r\n" +
+  httpsClient.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
                "Connection: close\r\n\r\n");
 
@@ -162,11 +224,17 @@ int GetStatusOfLastBuild(String url) {
     }
   }
   String line;
-  line = httpsClient.readString();  //Read Line by Line
-  if(line.indexOf("success") > 0) {
-    return 1;
-  }
-  else {
-    return 2;
-  }
+  line = httpsClient.readString();
+  Serial.print("Payload: ");
+  Serial.println(line);
+
+  return line;
+
+}
+
+String GetSlug(String host, String url) {
+  String result = GetHttpContent(host, url);
+  Serial.println("APP Slug");
+  Serial.println(result);
+  return result;
 }
