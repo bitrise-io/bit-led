@@ -27,7 +27,7 @@
  *   Note that you can find detailed debug information in the serial console depending
  *   on the settings IOTWEBCONF_DEBUG_TO_SERIAL, IOTWEBCONF_DEBUG_PWD_TO_SERIAL set
  *   in the IotWebConf.h .
- */
+ 
 
 #include <IotWebConf.h>
 
@@ -74,7 +74,7 @@ void loop()
 
 /**
  * Handle web requests to "/" path.
- */
+ 
 void handleRoot()
 {
   // -- Let IotWebConf test and handle captive portal requests.
@@ -89,4 +89,4 @@ void handleRoot()
   s += "</body></html>\n";
 
   server.send(200, "text/html", s);
-}
+}*/

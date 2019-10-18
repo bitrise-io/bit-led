@@ -13,15 +13,18 @@
 // Set up the NeoPixel LED on the predefined PIN
 Adafruit_NeoPixel pixels(1, PIN, NEO_GRB + NEO_KHZ800);
 
-const String host = "app.bitrise.io";
-const String Wifi_Name = "Your-WiFi-Name";
-const String Wifi_Pass = "Your-WiFi-Password";
-const String App_URL = "/app/ae82b6a9ec246f90/status.json?token=AHkq9V2RubZyORmdYxLGZw&branch=master";
+const String CONFIG_HOST = "gist.githubusercontent.com";
+const String CONFIG_URL = "/bitrisekristof/b9414fe2dbbea82745ffe8abc14707d6/raw/81e0a430d36cbfb0782db8099414dbe123631492/config.conf";
+const String BITRISE_HOST = "app.bitrise.io";
+const String Wifi_Name = "Your-wifi-name";
+const String Wifi_Pass = "Your-wifi-passw";
+
 
 const int PORT = 443;  // HTTPS 443
 
 //SHA1 finger print of certificate use web browser to view and copy
-const char fingerprint[] PROGMEM = "1E E5 3F 59 83 35 42 53 49 69 FB 0A 3A 49 8D 66 5E 58 05 15";
+//const char BITRISE_FINGERPRINT[] PROGMEM = "1E E5 3F 59 83 35 42 53 49 69 FB 0A 3A 49 8D 66 5E 58 05 15";
+//const char CONFIG_FINGERPRINT[]  PROGMEM = "59 74 61 88 13 CA 12 34 15 4D 11 0A C1 7F E6 67 07 69 42 F5";
 
 // Colors
 const uint32_t C_Black = pixels.Color(0,0,0);
@@ -44,16 +47,20 @@ unsigned long Previous_Millis = 0;
 
 const long Delay_Interval = 500;
 
+String Url_From_Gist;
+
 void setup() {
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
   pixels.clear();
   Set_LED(C_Purple, 1);
   Show_LED();
   ConnectToWifi(Wifi_Name, Wifi_Pass);
+  Url_From_Gist = GetUrl(CONFIG_HOST,CONFIG_URL);
 }
 
 void loop() {
-  if (GetStatusOfLastBuild(App_URL) == 1) {
+
+  if (GetStatusOfLastBuild(Url_From_Gist) == 1) {
     Set_LED(C_Green, 0);
   } else {
     Set_LED(C_Red, 0);
@@ -115,12 +122,25 @@ void ConnectToWifi(String ssid, String password) {
 }
 
 int GetStatusOfLastBuild(String url) {
-   WiFiClientSecure httpsClient;    //Declare object of class WiFiClient
+  String payload = GetHttpContent(BITRISE_HOST, url);
+
+  
+  if(payload.indexOf("success") > 0) {
+    return 1;
+  }
+  else {
+    return 2;
+  }
+}
+
+String GetHttpContent(String host, String url) {
+
+     WiFiClientSecure httpsClient;    //Declare object of class WiFiClient
 
   Serial.println(host);
 
-  Serial.printf("Using fingerprint '%s'\n", fingerprint);
-  httpsClient.setFingerprint(fingerprint);
+  //httpsClient.setFingerprint(fingerPrint);
+  httpsClient.setInsecure();
   httpsClient.setTimeout(15000); // 15 Seconds
   delay(1000);
 
@@ -143,12 +163,11 @@ int GetStatusOfLastBuild(String url) {
   ADCData = String(adcvalue);   //String to interger conversion
 
   //GET Data
-  Link = url;
-
+ 
   Serial.print("requesting URL: ");
-  Serial.println(host+Link);
+  Serial.println(host+url);
 
-  httpsClient.print(String("GET ") + Link + " HTTP/1.1\r\n" +
+  httpsClient.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
                "Connection: close\r\n\r\n");
 
@@ -162,11 +181,21 @@ int GetStatusOfLastBuild(String url) {
     }
   }
   String line;
-  line = httpsClient.readString();  //Read Line by Line
-  if(line.indexOf("success") > 0) {
-    return 1;
-  }
-  else {
-    return 2;
-  }
+  line = httpsClient.readString();
+    Serial.print("Payload: ");
+  Serial.println(line);
+  
+  //httpsClient.end();
+  
+  return line;
+
+}
+
+String GetUrl(String host, String url) {
+
+  String result = GetHttpContent(host, url);
+  Serial.println("APP URL");
+  Serial.println(result);
+  return result;
+  
 }
