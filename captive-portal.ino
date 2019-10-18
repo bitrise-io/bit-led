@@ -46,7 +46,7 @@ WebServer server(80);
 
 IotWebConf iotWebConf(thingName, &dnsServer, &server, wifiInitialApPassword);
 
-void setup()
+ void _setup()
 {
   Serial.begin(115200);
   Serial.println();
@@ -66,7 +66,7 @@ void setup()
   Serial.println("Ready.");
 }
 
-void loop()
+void _loop()
 {
   // -- doLoop should be called as frequently as possible.
   iotWebConf.doLoop();
