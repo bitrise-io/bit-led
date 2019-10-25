@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Bit LED</title>
+    <link href="data:image/x-icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAADRVQAAAAAALU/kgDPZ7AACltuAN6VyADrltEAiiRrAPW14gCFKmoAbhlUAEADNQBXDUEAOb7bABqCmQAAAAAAEREdERHRERERER4REeERERERFBERQREREREQEREBEREREbu7u7sRERERvMzMyxERERG6qqzLEREREbmZqssRERERt3eayxERERG3d5rLEREREbJ3mssRERERsyeayxERERG1MnrLEREREbhjJ8sRERERG4YysRERERERu7sRERH73wAA+98AAPvfAAD73wAA8A8AAPAPAADwDwAA8A8AAPAPAADwDwAA8A8AAPAPAADwDwAA8A8AAPgfAAD8PwAA" rel="icon" type="image/x-icon" />
+    <style>
+        html, body {
+            display: inline-block;
+            text-align: center;
+            height: 100%;
+            border: 0px;
+            padding: 0%;
+            margin: 0%;
+            background-color: rgb(118,15,195);
+        }
+
+        .form_elem {
+            margin-bottom: 0.75rem;
+        }
+
+        #submit_button {
+            background-color:aquamarine;
+            color: rgb(8, 23, 40);
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="main_wrapper">
+        <div id="main_header">
+            <h1>Bit LED Configuration</h1>
+        </div>
+        <div id="main_body">
+            <form>
+                <div class="form_elem">
+                    WiFi SSID:<br>
+                    <input id="input_wifi_ssid" type="text" name="wifi_ssid"><br>
+                </div>
+                <div class="form_elem">
+                    Wifi Password<br>
+                    <input id="input_wifi_pass" type="text" name="wifi_pass"><br>
+                </div>
+                <div class="form_elem">
+                    Bitrise App Slug:<br>
+                    <input id="input_app_slug" type="text" name="app_slug"><br>
+                </div>
+                <div class="form_elem">
+                    Bitrise API Token<br>
+                    <input id="input_api_token" type="text" name="api_token"><br>
+                </div>
+                <br>
+                <div class="form_elem">
+                    <input id="submit_button" type="button" value="Submit">
+                </div>
+            </form>
+            <br>
+            <div id="result_box">Waiting Configs</div>
+        </div>
+        <br>
+        <div id="main_foot">
+            <p>2019 Bitrise ltd</p>
+        </div>
+    </div>
+    <script>
+        'use strict';
+
+        function displayResult(result) {
+            document.getElementById("result_box").innerHTML = result;
+        };
+
+        function POST(payload) {
+            let xmlHttp = new XMLHttpRequest();
+            xmlHttp.onreadystatechange = () => {
+                if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+                    displayResult(xmlHttp.responseText);
+            };
+            xmlHttp.open("POST", window.location.origin, true);
+            xmlHttp.send(JSON.stringify(payload));
+        };
+
+        function submitValues() {
+            let wifi_ssid = document.getElementById("input_wifi_ssid").value;
+            let wifi_pass = document.getElementById("input_wifi_pass").value;
+            let app_slug = document.getElementById("input_app_slug").value;
+            let api_token = document.getElementById("input_api_token").value;
+            let payload = {
+                wifi_ssid: wifi_ssid,
+                wifi_pass: wifi_pass,
+                app_slug: app_slug,
+                api_token: api_token
+            };
+            POST(payload);
+        };
+
+        window.addEventListener('load', function() {
+            document.getElementById("submit_button").addEventListener("click", submitValues);
+        });
+    </script>
+</body>
+</html>
